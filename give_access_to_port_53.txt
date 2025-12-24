@@ -1,0 +1,22 @@
+پیدا کردن اینکه چه چیزی پورت 53 را گرفته
+sudo netstat -tulpn | grep :53
+
+غیرفعال کردن systemd-resolved
+sudo systemctl stop systemd-resolved
+sudo systemctl disable systemd-resolved
+
+سرویس را دوباره فعال و شروع کن
+sudo systemctl enable systemd-resolved
+sudo systemctl start systemd-resolved
+
+برای اجرا هم باید با دسترسی روت اجرا کنی
+sudo go run main.go
+
+فرستادن پکت با nslookup
+nslookup -port=8053 hostName 127.0.0.1
+
+فرستادن پکت با dig
+dig @127.0.0.1 -p 8053 hostName
+
+اجرا تابع تست همراه با verbose
+go test -run TestFuncName
