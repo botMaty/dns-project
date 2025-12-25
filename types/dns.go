@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type RecordType uint16
 
@@ -29,7 +32,7 @@ type Storage interface {
 }
 
 type Resolver interface {
-	Resolve(question DNSQuestion) DNSResponse
+	Resolve(ctx context.Context, req []byte) ([]byte, error)
 }
 
 type UpStream interface {
