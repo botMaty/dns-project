@@ -12,12 +12,18 @@ import (
 type Resolver struct {
 	store    types.Storage
 	upstream types.UpStream
+	logger   Logger
 }
 
-func New(store types.Storage, upstream types.UpStream) *Resolver {
+type Logger interface {
+	Info(msg string)
+}
+
+func New(store types.Storage, upstream types.UpStream, logger Logger) *Resolver {
 	return &Resolver{
 		store:    store,
 		upstream: upstream,
+		logger:   logger,
 	}
 }
 
@@ -44,13 +50,19 @@ func (r *Resolver) Resolve(
 	}
 
 	if records, ok := r.store.Get(question); ok {
+		r.logger.Info("CACHE HIT: " + question.Name)
 		return r.buildResponse(header, question, records)
 	}
 
+	r.logger.Info("CACHE MISS: " + question.Name)
+
 	resp, err := r.upstream.Query(question)
 	if err != nil {
+		r.logger.Info("UPSTREAM FAIL: " + question.Name)
 		return r.buildErrorResponse(header, dnsmessage.RCodeServerFailure)
 	}
+
+	r.logger.Info("UPSTREAM OK: " + question.Name)
 
 	for _, rec := range resp.Records {
 		r.store.Set(rec)

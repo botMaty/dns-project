@@ -13,8 +13,9 @@ import (
 func main() {
 	store := storage.NewMemoryStorage()
 	up := upstream.NewUDPUpstream("8.8.8.8:53")
+	logger := &resolver.StdLogger{}
 
-	res := resolver.New(store, up)
+	res := resolver.New(store, up, logger)
 
 	udp := transport.NewUDPServer(":8053", res)
 	doh := transport.NewDoHServer(":8054", res, "", "")
