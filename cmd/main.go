@@ -18,7 +18,7 @@ func main() {
 
 	udp := transport.NewUDPServer(":8053", res)
 	doh := transport.NewDoHServer(":8054", res, "", "")
-	adminSrv := admin.New(store)
+	adminSrv := admin.New(store, "super-secret-token")
 
 	mux := http.NewServeMux()
 	adminSrv.Register(mux)

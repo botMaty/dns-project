@@ -8,14 +8,32 @@ import (
 
 type Server struct {
 	store types.Storage
+	token string
 }
 
-func New(store types.Storage) *Server {
-	return &Server{store: store}
+func New(store types.Storage, token string) *Server {
+	return &Server{
+		store: store,
+		token: token,
+	}
+}
+
+func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		h := r.Header.Get("Authorization")
+		if h != "Bearer "+s.token {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next(w, r)
+	}
 }
 
 func (s *Server) Register(mux *http.ServeMux) {
-	mux.HandleFunc("/admin/records", s.handleRecords)
+	mux.HandleFunc(
+		"/admin/records",
+		s.auth(s.handleRecords),
+	)
 }
 
 func (s *Server) handleRecords(w http.ResponseWriter, r *http.Request) {
