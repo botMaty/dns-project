@@ -9,21 +9,25 @@ import (
 )
 
 func main() {
-	// 1️⃣ ساخت Storage
-	memStore := storage.NewMemoryStorage()
-
-	// 2️⃣ ساخت Upstream (مثلاً Google DNS)
+	store := storage.NewMemoryStorage()
 	up := upstream.NewUDPUpstream("8.8.8.8:53")
 
-	// 3️⃣ ساخت Resolver
-	res := resolver.New(memStore, up)
+	res := resolver.NewResolver(store, up)
 
-	// 4️⃣ ساخت UDP Server روی پورت 8053
 	udp := transport.NewUDPServer(":8053", res)
+	doh := transport.NewDoHServer(":8054", res, "", "")
 
-	// 5️⃣ شروع به کار سرور
-	log.Println("Starting UDP DNS server on :8053")
-	if err := udp.ListenAndServe(); err != nil {
-		log.Fatalf("Server error: %v", err)
-	}
+	go func() {
+		if err := udp.ListenAndServe(); err != nil {
+			log.Fatalf("UDP error: %v", err)
+		}
+	}()
+
+	go func() {
+		if err := doh.ListenAndServe(); err != nil {
+			log.Fatalf("DoH error: %v", err)
+		}
+	}()
+
+	select {} // برنامه زنده بماند
 }

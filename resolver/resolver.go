@@ -14,7 +14,7 @@ type Resolver struct {
 	upstream types.UpStream
 }
 
-func New(store types.Storage, upstream types.UpStream) *Resolver {
+func NewResolver(store types.Storage, upstream types.UpStream) *Resolver {
 	return &Resolver{
 		store:    store,
 		upstream: upstream,
