@@ -29,6 +29,7 @@ type Storage interface {
 	Get(question DNSQuestion) ([]DNSRecord, bool)
 	Set(record DNSRecord)
 	Delete(name string, rtype RecordType)
+	List() []DNSRecord
 }
 
 type Resolver interface {

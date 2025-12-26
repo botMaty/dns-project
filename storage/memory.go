@@ -64,3 +64,18 @@ func (m *MemoryStorage) Delete(name string, rtype types.RecordType) {
 	k := key(name, rtype)
 	delete(m.records, k)
 }
+
+func (m *MemoryStorage) List() []types.DNSRecord {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var all []types.DNSRecord
+	for _, recs := range m.records {
+		for _, r := range recs {
+			if r.ExpiresAt.After(time.Now()) {
+				all = append(all, r)
+			}
+		}
+	}
+	return all
+}

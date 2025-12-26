@@ -39,6 +39,11 @@ func (s *Server) Register(mux *http.ServeMux) {
 func (s *Server) handleRecords(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 
+	case http.MethodGet:
+		records := s.store.List()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(records)
+
 	case http.MethodPost:
 		var req struct {
 			Name  string           `json:"name"`
