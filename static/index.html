@@ -79,15 +79,40 @@
                 const records = await res.json() || [];
                 const tbody = document.getElementById("recordsList");
                 tbody.innerHTML = "";
+                
                 records.forEach(r => {
                     const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${r.Name}</td>
-                        <td>${recordTypeToString(r.Type)}</td>
-                        <td>${r.Value}</td>
-                        <td>${r.TTL}</td>
-                        <td><button class="btn-delete" onclick="deleteRecord('${r.Name}', '${recordTypeToString(r.Type)}')">Delete</button></td>
-                    `;
+                    
+                    // سلول‌ها
+                    const tdName = document.createElement("td");
+                    tdName.textContent = r.Name;
+                    
+                    const tdType = document.createElement("td");
+                    tdType.textContent = recordTypeToString(r.Type);
+                    
+                    const tdValue = document.createElement("td");
+                    tdValue.textContent = r.Value;
+                    
+                    const tdTTL = document.createElement("td");
+                    tdTTL.textContent = r.TTL;
+                    
+                    // دکمه delete
+                    const tdAction = document.createElement("td");
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.className = "btn-delete";
+                    deleteBtn.textContent = "Delete";
+                    deleteBtn.onclick = () => {
+                        deleteRecord(r.Name, recordTypeToString(r.Type), r.Value);
+                    };
+                    tdAction.appendChild(deleteBtn);
+                    
+                    // اضافه کردن به ردیف
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdType);
+                    tr.appendChild(tdValue);
+                    tr.appendChild(tdTTL);
+                    tr.appendChild(tdAction);
+                    
                     tbody.appendChild(tr);
                 });
             } catch (e) {
@@ -129,7 +154,7 @@
             }
         }
 
-        async function deleteRecord(name, strType) {
+        async function deleteRecord(name, strType, value) {
             if (!confirm("Delete this record?")) return;
             const type = stringToRecordType(strType);
 
@@ -140,7 +165,7 @@
                         "Authorization": "Bearer " + TOKEN,
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ name, type })
+                    body: JSON.stringify({ name, type, value })
                 });
 
                 if (res.ok) {

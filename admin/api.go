@@ -75,8 +75,9 @@ func (s *Server) handleRecords(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodDelete:
 		var req struct {
-			Name string           `json:"name"`
-			Type types.RecordType `json:"type"`
+			Name  string           `json:"name"`
+			Type  types.RecordType `json:"type"`
+			Value string           `json:"value"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -84,7 +85,7 @@ func (s *Server) handleRecords(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		s.store.Delete(req.Name, req.Type)
+		s.store.Delete(req.Name, req.Type, req.Value)
 		w.WriteHeader(http.StatusNoContent)
 
 	default:

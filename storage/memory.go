@@ -57,12 +57,23 @@ func (m *MemoryStorage) Set(r types.DNSRecord) {
 	m.records[k] = append(m.records[k], r)
 }
 
-func (m *MemoryStorage) Delete(name string, rtype types.RecordType) {
+func (m *MemoryStorage) Delete(name string, rtype types.RecordType, value string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	k := key(name, rtype)
-	delete(m.records, k)
+	if value == "" {
+		// delete all
+		delete(m.records, k)
+	} else {
+		var filtered []types.DNSRecord
+		for _, r := range m.records[k] {
+			if r.Value != value {
+				filtered = append(filtered, r)
+			}
+		}
+		m.records[k] = filtered
+	}
 }
 
 func (m *MemoryStorage) List() []types.DNSRecord {

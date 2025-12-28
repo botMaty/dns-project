@@ -11,7 +11,12 @@ import (
 )
 
 func main() {
-	store := storage.NewMemoryStorage()
+	store, err := storage.NewSQLiteStorage("dns_chache.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer store.Close()
+
 	up := upstream.NewUDPUpstream("8.8.8.8:53")
 	logger := &resolver.StdLogger{}
 

@@ -28,7 +28,7 @@ type DNSResponse struct {
 type Storage interface {
 	Get(question DNSQuestion) ([]DNSRecord, bool)
 	Set(record DNSRecord)
-	Delete(name string, rtype RecordType)
+	Delete(name string, rtype RecordType, value string)
 	List() []DNSRecord
 }
 
