@@ -1,3 +1,4 @@
+// resolver/resolver.go - تابع toResource رو اینطوری تغییر بده
 package resolver
 
 import (
@@ -5,6 +6,8 @@ import (
 	"dns-server/types"
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 
 	"golang.org/x/net/dns/dnsmessage"
 )
@@ -132,6 +135,31 @@ func toResource(rec types.DNSRecord) (dnsmessage.Resource, error) {
 		return dnsmessage.Resource{
 			Header: h,
 			Body:   &dnsmessage.AAAAResource{AAAA: [16]byte(ip)},
+		}, nil
+
+	case dnsmessage.TypeCNAME:
+		return dnsmessage.Resource{
+			Header: h,
+			Body: &dnsmessage.CNAMEResource{
+				CNAME: dnsmessage.MustNewName(rec.Value),
+			},
+		}, nil
+
+	case dnsmessage.TypeMX:
+		parts := strings.Fields(rec.Value)
+		if len(parts) < 2 {
+			return dnsmessage.Resource{}, fmt.Errorf("invalid MX record format")
+		}
+		pref, err := strconv.ParseUint(parts[0], 10, 16)
+		if err != nil {
+			return dnsmessage.Resource{}, fmt.Errorf("invalid MX preference: %v", err)
+		}
+		return dnsmessage.Resource{
+			Header: h,
+			Body: &dnsmessage.MXResource{
+				Pref: uint16(pref),
+				MX:   dnsmessage.MustNewName(parts[1]),
+			},
 		}, nil
 
 	case dnsmessage.TypeTXT:

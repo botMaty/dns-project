@@ -30,10 +30,16 @@ func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func (s *Server) Register(mux *http.ServeMux) {
-	mux.HandleFunc(
-		"/admin/records",
-		s.auth(s.handleRecords),
-	)
+	mux.HandleFunc("/", s.handleUI)
+	mux.HandleFunc("/admin/records", s.auth(s.handleRecords))
+}
+
+func (s *Server) handleUI(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	http.ServeFile(w, r, "static/index.html")
 }
 
 func (s *Server) handleRecords(w http.ResponseWriter, r *http.Request) {

@@ -3,6 +3,7 @@ package upstream
 import (
 	"crypto/rand"
 	"dns-server/types"
+	"fmt"
 	"math/big"
 	"net"
 	"strings"
@@ -110,7 +111,6 @@ func parseResponse(buf []byte) (types.DNSResponse, error) {
 }
 
 func convertAnswer(a dnsmessage.Resource) (types.DNSRecord, bool) {
-
 	rec := types.DNSRecord{
 		Name: a.Header.Name.String(),
 		Type: types.RecordType(a.Header.Type),
@@ -118,12 +118,18 @@ func convertAnswer(a dnsmessage.Resource) (types.DNSRecord, bool) {
 	}
 
 	switch body := a.Body.(type) {
-
 	case *dnsmessage.AResource:
 		rec.Value = net.IP(body.A[:]).String()
 
 	case *dnsmessage.AAAAResource:
 		rec.Value = net.IP(body.AAAA[:]).String()
+
+	case *dnsmessage.CNAMEResource:
+		rec.Value = body.CNAME.String()
+
+	case *dnsmessage.MXResource:
+		// ذخیره MX به فرمت: "preference mx-server"
+		rec.Value = fmt.Sprintf("%d %s", body.Pref, body.MX.String())
 
 	case *dnsmessage.TXTResource:
 		rec.Value = strings.Join(body.TXT, " ")
@@ -145,12 +151,12 @@ func (u *UDPUpstream) Query(q types.DNSQuestion) (types.DNSResponse, error) {
 
 	packet, _, err := buildQueryPacket(q)
 	if err != nil {
-		return types.DNSResponse{}, nil
+		return types.DNSResponse{}, err
 	}
 
 	respBuf, err := u.exchange(packet)
 	if err != nil {
-		return types.DNSResponse{}, nil
+		return types.DNSResponse{}, err
 	}
 
 	return parseResponse(respBuf)

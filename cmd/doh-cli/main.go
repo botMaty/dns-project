@@ -38,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	packet, err := buildQuery(*name)
+	packet, err := buildQuery(*name + ".")
 	if err != nil {
 		panic(err)
 	}

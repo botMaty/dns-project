@@ -32,7 +32,7 @@ func NewDoHServer(
 
 func (s *DoHServer) ListenAndServe() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/query-dns/", s.handleDNS)
+	mux.HandleFunc("/dns-query", s.handleDNS)
 
 	server := &http.Server{
 		Addr:         s.addr,
@@ -50,6 +50,17 @@ func (s *DoHServer) ListenAndServe() error {
 }
 
 func (s *DoHServer) handleDNS(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// فقط DoH استاندارد
+	if ct := r.Header.Get("Content-Type"); r.Method == http.MethodPost && ct != "" && ct != "application/dns-message" {
+		http.Error(w, "Unsupported Content-Type", http.StatusUnsupportedMediaType)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
@@ -63,6 +74,7 @@ func (s *DoHServer) handleDNS(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Missing dns parameter", http.StatusBadRequest)
 			return
 		}
+
 		req, err = base64.RawURLEncoding.DecodeString(q)
 		if err != nil {
 			http.Error(w, "Invalid base64", http.StatusBadRequest)
@@ -70,15 +82,14 @@ func (s *DoHServer) handleDNS(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case http.MethodPost:
+		r.Body = http.MaxBytesReader(w, r.Body, 4096)
+		defer r.Body.Close()
+
 		req, err = io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Failed to read body", http.StatusBadRequest)
 			return
 		}
-
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
 	}
 
 	resp, err := s.resolver.Resolve(ctx, req)
@@ -87,6 +98,8 @@ func (s *DoHServer) handleDNS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Context-Type", "application/dns-message")
+	w.Header().Set("Content-Type", "application/dns-message")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
