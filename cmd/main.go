@@ -18,7 +18,7 @@ func main() {
 	res := resolver.New(store, up, logger)
 
 	udp := transport.NewUDPServer(":8053", res)
-	doh := transport.NewDoHServer(":8054", res, "", "")
+	doh := transport.NewDoHServer(":8054", res, "certs/cert.pem", "certs/key.pem")
 	adminSrv := admin.New(store, "super-secret-token")
 
 	mux := http.NewServeMux()

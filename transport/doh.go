@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -43,21 +44,19 @@ func (s *DoHServer) ListenAndServe() error {
 
 	// HTTP or HTTPS
 	if s.certFile != "" && s.keyFile != "" {
-		return server.ListenAndServeTLS(s.certFile, s.keyFile)
+		if _, err := os.Stat(s.certFile); err == nil {
+			if _, err := os.Stat(s.keyFile); err == nil {
+				return server.ListenAndServeTLS(s.certFile, s.keyFile)
+			}
+		}
 	}
-
 	return server.ListenAndServe()
+
 }
 
 func (s *DoHServer) handleDNS(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// فقط DoH استاندارد
-	if ct := r.Header.Get("Content-Type"); r.Method == http.MethodPost && ct != "" && ct != "application/dns-message" {
-		http.Error(w, "Unsupported Content-Type", http.StatusUnsupportedMediaType)
 		return
 	}
 

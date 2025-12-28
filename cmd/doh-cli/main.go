@@ -8,14 +8,15 @@ import (
 	"net/http"
 	"os"
 
+	"crypto/tls"
+
 	"golang.org/x/net/dns/dnsmessage"
 )
 
 func buildQuery(name string) ([]byte, error) {
 	msg := dnsmessage.Message{
 		Header: dnsmessage.Header{
-			ID:       1,
-			Response: false,
+			ID: 1,
 		},
 		Questions: []dnsmessage.Question{
 			{
@@ -29,8 +30,9 @@ func buildQuery(name string) ([]byte, error) {
 }
 
 func main() {
-	url := flag.String("url", "http://127.0.0.1:8054/query-dns/", "DoH endpoint")
+	url := flag.String("url", "127.0.0.1:8054/dns-query", "DoH endpoint host:port (without scheme)")
 	name := flag.String("name", "", "domain name")
+	useHTTPS := flag.Bool("https", false, "use HTTPS instead of HTTP")
 	flag.Parse()
 
 	if *name == "" {
@@ -44,9 +46,23 @@ func main() {
 	}
 
 	dnsParam := base64.RawURLEncoding.EncodeToString(packet)
-	fullURL := *url + "?dns=" + dnsParam
+	scheme := "http"
+	if *useHTTPS {
+		scheme = "https"
+	}
+	fullURL := scheme + "://" + *url + "?dns=" + dnsParam
 
-	resp, err := http.Get(fullURL)
+	client := &http.Client{}
+	if *useHTTPS {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // accept self-signed
+			},
+		}
+		client.Transport = tr
+	}
+
+	resp, err := client.Get(fullURL)
 	if err != nil {
 		panic(err)
 	}
@@ -61,9 +77,16 @@ func main() {
 	}
 
 	fmt.Println("RCode:", h.RCode)
-	answers, _ := p.AllAnswers()
-	for _, a := range answers {
-		fmt.Println(a.Header.Name, a.Header.Type)
+
+	if h.RCode != dnsmessage.RCodeSuccess {
+		return
 	}
 
+	p.SkipAllQuestions()
+
+	answers, _ := p.AllAnswers()
+	for _, a := range answers {
+		fmt.Println(a.Header.Name, a.Header.Type, a.Header.TTL)
+	}
+	// get value: resource, ok := a.Body.(*dnsmessage.{STR TYPE}Resource)
 }
