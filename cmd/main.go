@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	store, err := storage.NewSQLiteStorage("dns_chache.db")
+	store, err := storage.NewSQLiteStorage("dns_cache.db")
 	if err != nil {
 		log.Fatal(err)
 	}

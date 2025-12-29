@@ -17,3 +17,30 @@ go run cmd/doh-cli/main.go -name google.com
 go run cmd/doh-cli/main.go -name google.com -https true
 
 # Web UI for handle records: http://127.0.0.1:8055
+
+# DoH HTTP packet format:
+GET /dns-query?dns=...
+POST /dns-query
+Response Type: binary
+Content-Type: application/dns-message
+
+# DNS over JSON (in HTTP)
+GET /dns-query/json?name=google.com&type=A
+POST /dns-query/json
+{
+  "name": "google.com",
+  "type": "A"
+}
+Response Type: JSON:
+{
+  "rcode": "NOERROR",
+  "answers": [
+    {
+      "name": "google.com.",
+      "type": "A",
+      "ttl": 300,
+      "value": "142.250.185.78"
+    }
+  ]
+}
+Content-Type: application/dns-message

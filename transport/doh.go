@@ -34,6 +34,7 @@ func NewDoHServer(
 func (s *DoHServer) ListenAndServe() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/dns-query", s.handleDNS)
+	mux.HandleFunc("/dns-query/json", s.handleJSON)
 
 	server := &http.Server{
 		Addr:         s.addr,
