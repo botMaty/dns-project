@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -33,6 +34,7 @@ func main() {
 	url := flag.String("url", "127.0.0.1:8054/dns-query", "DoH endpoint host:port (without scheme)")
 	name := flag.String("name", "", "domain name")
 	useHTTPS := flag.Bool("https", false, "use HTTPS instead of HTTP")
+	method := flag.String("method", "get", "HTTP method: get or post")
 	flag.Parse()
 
 	if *name == "" {
@@ -45,24 +47,42 @@ func main() {
 		panic(err)
 	}
 
-	dnsParam := base64.RawURLEncoding.EncodeToString(packet)
-	scheme := "http"
-	if *useHTTPS {
-		scheme = "https"
-	}
-	fullURL := scheme + "://" + *url + "?dns=" + dnsParam
-
 	client := &http.Client{}
 	if *useHTTPS {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, // accept self-signed
+				InsecureSkipVerify: true,
 			},
 		}
 		client.Transport = tr
 	}
 
-	resp, err := client.Get(fullURL)
+	var resp *http.Response
+	scheme := "http"
+	if *useHTTPS {
+		scheme = "https"
+	}
+
+	switch *method {
+	case "get":
+		dnsParam := base64.RawURLEncoding.EncodeToString(packet)
+		fullURL := scheme + "://" + *url + "?dns=" + dnsParam
+		resp, err = client.Get(fullURL)
+
+	case "post":
+		fullURL := scheme + "://" + *url
+		req, errReq := http.NewRequest(http.MethodPost, fullURL, bytes.NewReader(packet))
+		if errReq != nil {
+			panic(errReq)
+		}
+		req.Header.Set("Content-Type", "application/dns-message")
+		resp, err = client.Do(req)
+
+	default:
+		fmt.Println("invalid method: use get or post")
+		os.Exit(1)
+	}
+
 	if err != nil {
 		panic(err)
 	}
@@ -77,16 +97,14 @@ func main() {
 	}
 
 	fmt.Println("RCode:", h.RCode)
-
 	if h.RCode != dnsmessage.RCodeSuccess {
 		return
 	}
 
 	p.SkipAllQuestions()
-
 	answers, _ := p.AllAnswers()
 	for _, a := range answers {
 		fmt.Println(a.Header.Name, a.Header.Type, a.Header.TTL)
+		// resource, ok := a.Body.(*dnsmessage.AResource) // برای دسترسی به مقدار
 	}
-	// get value: resource, ok := a.Body.(*dnsmessage.{STR TYPE}Resource)
 }
