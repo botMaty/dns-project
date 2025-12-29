@@ -1,46 +1,122 @@
-# key.pem:
-openssl genrsa -out key.pem 2048
+# DNS Project
 
-# cert.pem:
-openssl req -new -x509 -key key.pem -out cert.pem -days 365
+This project is a full-featured DNS server supporting:
 
-# UDP test
+* UDP and TCP on port 8053
+* DNS over HTTPS (DoH) on port 8054
+* Web UI for managing records on port 8055
+* DNS over JSON API for querying records
+
+## TLS Setup (for HTTPS)
+
+For testing with a self-signed certificate:
+
+```bash
+mkdir certs
+openssl genrsa -out certs/key.pem 2048
+openssl req -new -x509 -key certs/key.pem -out certs/cert.pem -days 365
+```
+
+## Ports
+
+| Service            | Port |
+| ------------------ | ---- |
+| UDP/TCP DNS        | 8053 |
+| DoH (HTTPS)        | 8054 |
+| Web UI / Admin API | 8055 |
+
+## Testing
+
+### UDP
+
+```bash
 dig @127.0.0.1 -p 8053 example.com
+```
 
-# TCP test
+### TCP
+
+```bash
 dig @127.0.0.1 -p 8053 example.com +tcp
+```
 
-# DoH GET test with cli with HTTP connection
+### DoH CLI
+
+```bash
+# GET request
 go run cmd/doh-cli/main.go -name google.com
 
-# DoH GET test with cli with HTTPs connection
-go run cmd/doh-cli/main.go -name google.com -https true
+# POST request
+go run cmd/doh-cli/main.go -name google.com -method post
 
-# Web UI for handle records: http://127.0.0.1:8055
+# HTTPS
+"go run cmd/doh-cli/main.go -name google.com -https true"
+```
 
-# DoH HTTP packet format:
-GET /dns-query?dns=...
-POST /dns-query
-Response Type: binary
-Content-Type: application/dns-message
+### DNS JSON CLI
 
-# DNS over JSON (in HTTP)
-GET /dns-query/json?name=google.com&type=A
-POST /dns-query/json
-{
-  "name": "google.com",
-  "type": "A"
-}
-Response Type: JSON:
+```bash
+# GET request
+go run cmd/dns-json-cli/main.go -name google.com
+
+# POST request
+go run cmd/dns-json-cli/main.go -name google.com -method post
+
+# HTTPS
+"go run cmd/dns-json-cli/main.go -name google.com -https true"
+```
+
+### Web UI
+
+```
+http://127.0.0.1:8055
+```
+
+## DNS Request Formats
+
+### DoH (binary)
+
+* GET: `/dns-query?dns=...`
+* POST: `/dns-query` (body: DNS binary)
+* Response: `Content-Type: application/dns-message`
+
+### DNS over JSON
+
+* GET: `/dns-query/json?name=google.com&type=A`
+* POST: `/dns-query/json`
+
+```json
+{ "name": "google.com", "type": "A" }
+```
+
+* Response: `Content-Type: application/dns-json`
+
+```json
 {
   "rcode": "NOERROR",
   "answers": [
-    {
-      "name": "google.com.",
-      "type": "A",
-      "ttl": 300,
-      "value": "142.250.185.78"
-    }
+    { "name": "google.com.", "type": "A", "ttl": 300, "value": "142.250.185.78" }
   ]
 }
-Content-Type: application/dns-message
+```
+
+## Sample `.env`
+
+```env
+UDP_PORT=:8053
+TCP_PORT=:8053
+DOH_PORT=:8054
+ADMIN_PORT=:8055
+
+DOH_CERT=certs/cert.pem
+DOH_KEY=certs/key.pem
+
+ADMIN_PASSWORD=12345
+UPSTREAM_DNS=8.8.8.8:53
+DB_FILE=dns_records.db
+```
+
+## Run the Project
+
+```bash
+go run cmd/main.go
+```
