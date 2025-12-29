@@ -33,7 +33,7 @@ func buildQuery(name string) ([]byte, error) {
 func main() {
 	url := flag.String("url", "127.0.0.1:8054/dns-query", "DoH endpoint host:port (without scheme)")
 	name := flag.String("name", "", "domain name")
-	useHTTPS := flag.Bool("https", false, "use HTTPS instead of HTTP")
+	useHTTPS := flag.Bool("https", false, "use HTTPS")
 	method := flag.String("method", "get", "HTTP method: get or post")
 	flag.Parse()
 
@@ -51,7 +51,7 @@ func main() {
 	if *useHTTPS {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: true, // accept self-signed
 			},
 		}
 		client.Transport = tr
