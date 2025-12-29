@@ -39,3 +39,8 @@ type Resolver interface {
 type UpStream interface {
 	Query(question DNSQuestion) (DNSResponse, error)
 }
+
+type Session struct {
+	Token  string
+	Expiry time.Time
+}

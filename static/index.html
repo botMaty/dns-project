@@ -3,225 +3,133 @@
 <head>
     <title>DNS Manager</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .header h1 { font-size: 24px; color: #333; }
-        .form-group { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 100px; gap: 10px; margin-bottom: 15px; }
-        .form-row input, .form-row select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; }
-        button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .btn-delete { background: #dc3545; padding: 6px 12px; font-size: 12px; }
-        .btn-delete:hover { background: #c82333; }
-        .records { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        body { font-family: system-ui; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: auto; padding: 20px; }
+        .box { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #f8f9fa; padding: 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #ddd; }
-        td { padding: 12px; border-bottom: 1px solid #ddd; }
-        tr:hover { background: #f8f9fa; }
-        .error { color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 4px; margin-bottom: 10px; }
-        .success { color: #155724; padding: 10px; background: #d4edda; border-radius: 4px; margin-bottom: 10px; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; }
+        button { padding: 6px 12px; }
+        .hidden { display: none; }
+        .error { color: red; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔧 DNS Manager</h1>
-        </div>
 
-        <div id="message"></div>
+<div class="container">
 
-        <div class="form-group">
-            <h2>Add Record</h2>
-            <div class="form-row">
-                <input id="name" type="text" placeholder="Domain (e.g., example.com.)" />
-                <select id="type">
-                    <option value="A">A</option>
-                    <option value="AAAA">AAAA</option>
-                    <option value="CNAME">CNAME</option>
-                    <option value="MX">MX</option>
-                    <option value="TXT">TXT</option>
-                    <option value="NS">NS</option>
-                    <option value="PTR">PTR</option>
-                </select>
-                <input id="value" type="text" placeholder="Value (e.g., 192.168.1.1)" />
-                <input id="ttl" type="number" placeholder="TTL" value="3600" />
-                <button onclick="addRecord()">Add</button>
-            </div>
-        </div>
-
-        <div class="records">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Domain</th>
-                        <th>Type</th>
-                        <th>Value</th>
-                        <th>TTL</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="recordsList"></tbody>
-            </table>
-        </div>
+    <div class="box">
+        <h1>DNS Records</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th><th>Type</th><th>Value</th><th>TTL</th><th></th>
+                </tr>
+            </thead>
+            <tbody id="records"></tbody>
+        </table>
     </div>
 
-    <script>
-        const API_URL = "/admin/records";
-        const TOKEN = "super-secret-token";
+    <div id="admin" class="box hidden">
+        <h2>Add Record</h2>
+        <input id="name" placeholder="example.com." />
+        <select id="type">
+            <option>A</option>
+            <option>AAAA</option>
+            <option>CNAME</option>
+            <option>MX</option>
+            <option>TXT</option>
+            <option>NS</option>
+            <option>PTR</option>
+        </select>
+        <input id="value" placeholder="value" />
+        <input id="ttl" type="number" value="3600" />
+        <button onclick="add()">Add</button>
+        <button onclick="logout()">Logout</button>
+    </div>
 
-        async function loadRecords() {
-            try {
-                const res = await fetch(API_URL, {
-                    headers: { "Authorization": "Bearer " + TOKEN }
-                });
-                const records = await res.json() || [];
-                const tbody = document.getElementById("recordsList");
-                tbody.innerHTML = "";
-                
-                records.forEach(r => {
-                    const tr = document.createElement("tr");
-                    
-                    // سلول‌ها
-                    const tdName = document.createElement("td");
-                    tdName.textContent = r.Name;
-                    
-                    const tdType = document.createElement("td");
-                    tdType.textContent = recordTypeToString(r.Type);
-                    
-                    const tdValue = document.createElement("td");
-                    tdValue.textContent = r.Value;
-                    
-                    const tdTTL = document.createElement("td");
-                    tdTTL.textContent = r.TTL;
-                    
-                    // دکمه delete
-                    const tdAction = document.createElement("td");
-                    const deleteBtn = document.createElement("button");
-                    deleteBtn.className = "btn-delete";
-                    deleteBtn.textContent = "Delete";
-                    deleteBtn.onclick = () => {
-                        deleteRecord(r.Name, recordTypeToString(r.Type), r.Value);
-                    };
-                    tdAction.appendChild(deleteBtn);
-                    
-                    // اضافه کردن به ردیف
-                    tr.appendChild(tdName);
-                    tr.appendChild(tdType);
-                    tr.appendChild(tdValue);
-                    tr.appendChild(tdTTL);
-                    tr.appendChild(tdAction);
-                    
-                    tbody.appendChild(tr);
-                });
-            } catch (e) {
-                showError("Failed to load records");
-            }
-        }
+    <div id="login" class="box">
+        <h2>Admin Login</h2>
+        <input id="password" type="password" placeholder="password" />
+        <button onclick="login()">Login</button>
+        <div id="msg" class="error"></div>
+    </div>
 
-        async function addRecord() {
-            const name = document.getElementById("name").value;
-            const type = stringToRecordType(document.getElementById("type").value);
-            const value = document.getElementById("value").value;
-            const ttl = parseInt(document.getElementById("ttl").value);
+</div>
 
-            if (!name || !value) {
-                showError("Please fill all fields");
-                return;
-            }
+<script>
+async function load() {
+    const res = await fetch("/admin/records");
+    const data = await res.json();
+    const tbody = document.getElementById("records");
+    tbody.innerHTML = "";
 
-            try {
-                const res = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": "Bearer " + TOKEN,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ name, type, value, ttl })
-                });
+    data.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${r.Name}</td>
+            <td>${typeToStr(r.Type)}</td>
+            <td>${r.Value}</td>
+            <td>${r.TTL}</td>
+            <td><button onclick="del('${r.Name}',${r.Type},'${r.Value}')">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 
-                if (res.ok) {
-                    showSuccess("Record added!");
-                    document.getElementById("name").value = "";
-                    document.getElementById("value").value = "";
-                    loadRecords();
-                } else {
-                    showError("Failed to add record");
-                }
-            } catch (e) {
-                showError("Error: " + e.message);
-            }
-        }
+async function login() {
+    const password = document.getElementById("password").value;
+    const res = await fetch("/login", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({password}),
+        credentials: "same-origin"
+    });
 
-        async function deleteRecord(name, strType, value) {
-            if (!confirm("Delete this record?")) return;
-            const type = stringToRecordType(strType);
+    if (res.ok) {
+        document.getElementById("admin").classList.remove("hidden");
+        document.getElementById("login").classList.add("hidden");
+    } else {
+        document.getElementById("msg").textContent = "Login failed";
+    }
+}
 
-            try {
-                const res = await fetch(API_URL, {
-                    method: "DELETE",
-                    headers: {
-                        "Authorization": "Bearer " + TOKEN,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ name, type, value })
-                });
+async function logout() {
+    await fetch("/logout", { method: "POST", credentials: "same-origin" });
+    location.reload();
+}
 
-                if (res.ok) {
-                    showSuccess("Record deleted!");
-                    loadRecords();
-                } else {
-                    showError("Failed to delete record");
-                }
-            } catch (e) {
-                showError("Error: " + e.message);
-            }
-        }
+async function add() {
+    await fetch("/admin/records", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({
+            name: name.value,
+            type: strToType(type.value),
+            value: value.value,
+            ttl: parseInt(ttl.value)
+        })
+    });
+    load();
+}
 
-        const recordTypes = {
-            numberToString: {
-                1: "A",
-                28: "AAAA", 
-                5: "CNAME",
-                15: "MX",
-                2: "NS",
-                16: "TXT",
-                12: "PTR"
-            },
-            
-            stringToNumber: {}
-        };
+async function del(name, type, value) {
+    await fetch("/admin/records", {
+        method: "DELETE",
+        headers: {"Content-Type":"application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({ name, type, value })
+    });
+    load();
+}
 
-        Object.entries(recordTypes.numberToString).forEach(([num, name]) => {
-            recordTypes.stringToNumber[name] = parseInt(num);
-        });
+const map = {1:"A",28:"AAAA",5:"CNAME",15:"MX",16:"TXT",2:"NS",12:"PTR"};
+const rev = Object.fromEntries(Object.entries(map).map(([k,v])=>[v,parseInt(k)]));
+const typeToStr = t => map[t] || "";
+const strToType = s => rev[s] || 0;
 
-        // توابع تبدیل
-        function recordTypeToString(rt) {
-            return recordTypes.numberToString[rt] || "";
-        }
+load();
+</script>
 
-        function stringToRecordType(s) {
-            return recordTypes.stringToNumber[s] || 0;
-        }
-
-        function showError(msg) {
-            const div = document.getElementById("message");
-            div.className = "error";
-            div.textContent = msg;
-            setTimeout(() => div.textContent = "", 5000);
-        }
-
-        function showSuccess(msg) {
-            const div = document.getElementById("message");
-            div.className = "success";
-            div.textContent = msg;
-            setTimeout(() => div.textContent = "", 3000);
-        }
-
-        loadRecords();
-        setInterval(loadRecords, 5000);
-    </script>
 </body>
 </html>
