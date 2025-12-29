@@ -8,24 +8,40 @@ import (
 	"dns-server/upstream"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	store, err := storage.NewSQLiteStorage("dns_cache.db")
+	godotenv.Load()
+
+	udpPort := os.Getenv("UDP_PORT")
+	tcpPort := os.Getenv("TCP_PORT")
+	dohPort := os.Getenv("DOH_PORT")
+	adminPort := os.Getenv("ADMIN_PORT")
+
+	dohCert := os.Getenv("DOH_CERT")
+	dohKey := os.Getenv("DOH_KEY")
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	upstreamDNS := os.Getenv("UPSTREAM_DNS")
+	databaseFile := os.Getenv("DATABASE_FILE")
+
+	store, err := storage.NewSQLiteStorage(databaseFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer store.Close()
 
-	up := upstream.NewUDPUpstream("8.8.8.8:53")
+	up := upstream.NewUDPUpstream(upstreamDNS)
 	logger := &resolver.StdLogger{}
 	res := resolver.New(store, up, logger)
 
-	udp := transport.NewUDPServer(":8053", res)
-	tcp := transport.NewTCPServer(":8053", res)
-	doh := transport.NewDoHServer(":8054", res, "certs/cert.pem", "certs/key.pem")
+	udp := transport.NewUDPServer(udpPort, res)
+	tcp := transport.NewTCPServer(tcpPort, res)
+	doh := transport.NewDoHServer(dohPort, res, dohCert, dohKey)
 
-	adminSrv := admin.New(store, "12345")
+	adminSrv := admin.New(store, adminPassword)
 	mux := http.NewServeMux()
 	adminSrv.Register(mux)
 
@@ -48,7 +64,7 @@ func main() {
 	}()
 
 	go func() {
-		log.Fatal(http.ListenAndServe(":8055", mux))
+		log.Fatal(http.ListenAndServe(adminPort, mux))
 	}()
 
 	select {} // برنامه زنده بماند
