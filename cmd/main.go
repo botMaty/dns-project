@@ -24,7 +24,7 @@ func main() {
 
 	dohCert := os.Getenv("DOH_CERT")
 	dohKey := os.Getenv("DOH_KEY")
-	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	adminHashedPassword := os.Getenv("ADMIN_HASHED_PASSWORD")
 	upstreamDNS := os.Getenv("UPSTREAM_DNS")
 	databaseFile := os.Getenv("DATABASE_FILE")
 
@@ -42,7 +42,7 @@ func main() {
 	tcp := transport.NewTCPServer(tcpPort, res)
 	doh := transport.NewDoHServer(dohPort, res, dohCert, dohKey)
 
-	adminSrv := admin.New(store, adminPassword)
+	adminSrv := admin.New(store, adminHashedPassword)
 	mux := http.NewServeMux()
 	adminSrv.Register(mux)
 

@@ -7,20 +7,21 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Server struct {
-	store    types.Storage
-	password string
+	store           types.Storage
+	hashed_password string
 
 	sessions map[string]time.Time
 }
 
-func New(store types.Storage, password string) *Server {
+func New(store types.Storage, hashed_password string) *Server {
 	return &Server{
-		store:    store,
-		password: password,
-		sessions: make(map[string]time.Time),
+		store:           store,
+		hashed_password: hashed_password,
+		sessions:        make(map[string]time.Time),
 	}
 }
 
@@ -42,6 +43,7 @@ func (s *Server) isAdmin(r *http.Request) bool {
 func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/login", s.handleLogin)
 	mux.HandleFunc("/logout", s.handleLogout)
+	mux.HandleFunc("/session", s.handleSession)
 
 	mux.HandleFunc("/", (s.handleUI))
 	mux.HandleFunc("/admin/records", s.handleRecords)
@@ -61,7 +63,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Password != s.password {
+	if !check_hashed_password(s.hashed_password, req.Password) {
 		http.Error(w, "invalid credentials", http.StatusUnauthorized)
 		return
 	}
@@ -95,6 +97,20 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 		Path:   "/",
 		MaxAge: -1,
 	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if !s.isAdmin(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -164,4 +180,8 @@ func (s *Server) handleRecords(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+func check_hashed_password(hashedPassword string, password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)) == nil
 }

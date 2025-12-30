@@ -110,7 +110,7 @@ ADMIN_PORT=:8055
 DOH_CERT=certs/cert.pem
 DOH_KEY=certs/key.pem
 
-ADMIN_PASSWORD=12345
+ADMIN_HASHED_PASSWORD='$2a$10$rKkwknuEbrrudD5TsW8sjOZlLAfEioBgqKLIpCYJjLwq1vtNHUDKm'
 UPSTREAM_DNS=8.8.8.8:53
 DB_FILE=dns_records.db
 ```
