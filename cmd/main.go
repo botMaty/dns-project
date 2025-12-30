@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -44,6 +45,16 @@ func main() {
 	adminSrv := admin.New(store, adminPassword)
 	mux := http.NewServeMux()
 	adminSrv.Register(mux)
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := store.CleanupExpired(); err != nil {
+				log.Printf("cleanup error: %v", err)
+			}
+		}
+	}()
 
 	go func() {
 		if err := udp.ListenAndServe(); err != nil {

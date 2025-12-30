@@ -90,3 +90,20 @@ func (m *MemoryStorage) List() []types.DNSRecord {
 	}
 	return all
 }
+
+func (m *MemoryStorage) CleanupExpired() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	now := time.Now()
+	filtered := make(map[string][]types.DNSRecord, len(m.records))
+	for k, recs := range m.records {
+		for _, r := range recs {
+			if r.ExpiresAt.After(now) {
+				filtered[k] = append(filtered[k], r)
+			}
+		}
+	}
+	m.records = filtered
+	return nil
+}

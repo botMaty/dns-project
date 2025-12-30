@@ -49,7 +49,7 @@ go run cmd/doh-cli/main.go -name google.com
 go run cmd/doh-cli/main.go -name google.com -method post
 
 # HTTPS
-"go run cmd/doh-cli/main.go -name google.com -https true"
+go run cmd/doh-cli/main.go -name google.com -https true
 ```
 
 ### DNS JSON CLI
@@ -62,7 +62,7 @@ go run cmd/dns-json-cli/main.go -name google.com
 go run cmd/dns-json-cli/main.go -name google.com -method post
 
 # HTTPS
-"go run cmd/dns-json-cli/main.go -name google.com -https true"
+go run cmd/dns-json-cli/main.go -name google.com -https true
 ```
 
 ### Web UI

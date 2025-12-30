@@ -99,15 +99,20 @@ async function logout() {
 }
 
 async function add() {
+    const nameEl = document.getElementById("name");
+    const typeEl = document.getElementById("type");
+    const valueEl = document.getElementById("value");
+    const ttlEl = document.getElementById("ttl");
+
     await fetch("/admin/records", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
         credentials: "same-origin",
         body: JSON.stringify({
-            name: name.value,
-            type: strToType(type.value),
-            value: value.value,
-            ttl: parseInt(ttl.value)
+            name: nameEl.value,
+            type: strToType(typeEl.value),
+            value: valueEl.value,
+            ttl: parseInt(ttlEl.value, 10)
         })
     });
     load();
