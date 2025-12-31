@@ -14,6 +14,7 @@ import (
 func main() {
 	url := flag.String("url", "127.0.0.1:8054/dns-query/json", "DNS JSON endpoint host:port (without scheme)")
 	name := flag.String("name", "", "domain name")
+	type_ := flag.String("type", "A", "record type (A, AAAA, CNAME, etc.)")
 	method := flag.String("method", "get", "HTTP method: get or post")
 	useHTTPS := flag.Bool("https", false, "use HTTPS")
 	flag.Parse()
@@ -40,13 +41,13 @@ func main() {
 
 	switch *method {
 	case "get":
-		fullURL := fmt.Sprintf("%s://%s?name=%s&type=A", scheme, *url, *name)
+		fullURL := fmt.Sprintf("%s://%s?name=%s&type=%s", scheme, *url, *name, *type_)
 		resp, err = client.Get(fullURL)
 
 	case "post":
 		bodyJSON, _ := json.Marshal(map[string]string{
 			"name": *name,
-			"type": "A",
+			"type": *type_,
 		})
 		req, _ := http.NewRequest(http.MethodPost, scheme+"://"+*url, bytes.NewReader(bodyJSON))
 		req.Header.Set("Content-Type", "application/dns-json")

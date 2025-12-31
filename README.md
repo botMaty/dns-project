@@ -45,6 +45,9 @@ dig @127.0.0.1 -p 8053 example.com +tcp
 # GET request
 go run cmd/doh-cli/main.go -name google.com
 
+# Specify the Type
+go run cmd/doh-cli/main.go -name google.com -type a
+
 # POST request
 go run cmd/doh-cli/main.go -name google.com -method post
 
@@ -57,6 +60,9 @@ go run cmd/doh-cli/main.go -name google.com -https true
 ```bash
 # GET request
 go run cmd/dns-json-cli/main.go -name google.com
+
+# Specify the Type
+go run cmd/dns-json-cli/main.go -name google.com -type a
 
 # POST request
 go run cmd/dns-json-cli/main.go -name google.com -method post

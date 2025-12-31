@@ -8,13 +8,18 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"crypto/tls"
 
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-func buildQuery(name string) ([]byte, error) {
+func buildQuery(name string, type_ string) ([]byte, error) {
+	Type, err := parseType(type_)
+	if err != nil {
+		return nil, err
+	}
 	msg := dnsmessage.Message{
 		Header: dnsmessage.Header{
 			ID: 1,
@@ -22,7 +27,7 @@ func buildQuery(name string) ([]byte, error) {
 		Questions: []dnsmessage.Question{
 			{
 				Name:  dnsmessage.MustNewName(name),
-				Type:  dnsmessage.TypeA,
+				Type:  Type,
 				Class: dnsmessage.ClassINET,
 			},
 		},
@@ -33,6 +38,7 @@ func buildQuery(name string) ([]byte, error) {
 func main() {
 	url := flag.String("url", "127.0.0.1:8054/dns-query", "DoH endpoint host:port (without scheme)")
 	name := flag.String("name", "", "domain name")
+	type_ := flag.String("type", "A", "record type (A, AAAA, CNAME, etc.)")
 	useHTTPS := flag.Bool("https", false, "use HTTPS")
 	method := flag.String("method", "get", "HTTP method: get or post")
 	flag.Parse()
@@ -42,7 +48,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	packet, err := buildQuery(*name + ".")
+	packet, err := buildQuery(*name+".", *type_)
 	if err != nil {
 		panic(err)
 	}
@@ -106,5 +112,26 @@ func main() {
 	for _, a := range answers {
 		fmt.Println(a.Header.Name, a.Header.Type, a.Header.TTL)
 		// resource, ok := a.Body.(*dnsmessage.AResource) // برای دسترسی به مقدار
+	}
+}
+
+func parseType(t string) (dnsmessage.Type, error) {
+	switch strings.ToUpper(t) {
+	case "A":
+		return dnsmessage.TypeA, nil
+	case "AAAA":
+		return dnsmessage.TypeAAAA, nil
+	case "CNAME":
+		return dnsmessage.TypeCNAME, nil
+	case "MX":
+		return dnsmessage.TypeMX, nil
+	case "TXT":
+		return dnsmessage.TypeTXT, nil
+	case "NS":
+		return dnsmessage.TypeNS, nil
+	case "PTR":
+		return dnsmessage.TypePTR, nil
+	default:
+		return 0, fmt.Errorf("unsupported type")
 	}
 }
